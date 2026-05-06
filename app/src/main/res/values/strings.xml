@@ -1,0 +1,33 @@
+<resources>
+    <string name="app_name">Умные Шторы</string>
+    <string name="action_settings">Настройки</string>
+
+    <!-- Статусы -->
+    <string name="status_connected">Подключено</string>
+    <string name="status_disconnected">Не подключено</string>
+    <string name="status_connecting">Подключение...</string>
+
+    <!-- Команды -->
+    <string name="cmd_open">Открыть</string>
+    <string name="cmd_close">Закрыть</string>
+    <string name="cmd_stop">Стоп</string>
+
+    <!-- Сообщения -->
+    <string name="msg_command_sent">Команда отправлена</string>
+    <string name="msg_error">Ошибка: %s</string>
+    <string name="msg_connection_error">Ошибка соединения с сервером</string>
+    <string name="msg_settings_saved">Настройки сохранены</string>
+
+    <!-- Настройки -->
+    <string name="settings_server_url">URL сервера</string>
+    <string name="settings_curtain_id">ID штор</string>
+    <string name="settings_save">Сохранить</string>
+    <string name="settings_cancel">Отмена</string>
+
+    <!-- Старые ресурсы для совместимости (не используются в новом приложении) -->
+    <string name="next">Далее</string>
+    <string name="previous">Назад</string>
+    <string name="lorem_ipsum">Lorem ipsum dolor sit amet</string>
+    <string name="first_fragment_label">Первый фрагмент</string>
+    <string name="second_fragment_label">Второй фрагмент</string>
+</resources>
