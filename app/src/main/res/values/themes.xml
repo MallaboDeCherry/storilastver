@@ -1,9 +1,24 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.Sshtori" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
-    </style>
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Sshtori" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <!-- Основные цвета -->
+        <item name="colorPrimary">#2196F3</item>
+        <item name="colorPrimaryVariant">#1976D2</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="colorSecondary">#03DAC5</item>
+        <item name="colorSecondaryVariant">#03DAC5</item>
+        <item name="colorOnSecondary">@android:color/black</item>
 
-    <style name="Theme.Sshtori" parent="Base.Theme.Sshtori" />
+        <!-- Цвета для кнопок -->
+        <item name="colorPrimary">#2196F3</item>
+
+        <!-- Цвет статус бара -->
+        <item name="android:statusBarColor">#1976D2</item>
+
+        <!-- Цвет фона окна -->
+        <item name="android:windowBackground">#F5F5F5</item>
+
+        <!-- Стиль для кнопок MaterialButton -->
+        <item name="materialButtonStyle">@style/Widget.Material3.Button</item>
+    </style>
 </resources>

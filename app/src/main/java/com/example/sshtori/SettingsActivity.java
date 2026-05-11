@@ -1,303 +1,225 @@
 package com.example.sshtori;
 
-import android.content.ClipData;
-import android.content.ClipboardManager;
-import android.content.Context;
 import android.os.Bundle;
-import android.os.Vibrator;
-import android.view.MenuItem;
+import android.widget.Button;
 import android.widget.Toast;
 
-import androidx.activity.OnBackPressedCallback;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 
-import com.example.sshtori.network.CurtainApiClient;
 import com.example.sshtori.utils.PreferencesManager;
-import com.google.android.material.button.MaterialButton;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.google.android.material.textfield.TextInputEditText;
 
-/**
- * Экран настроек приложения
- */
 public class SettingsActivity extends AppCompatActivity {
 
-    // UI элементы
-    private TextInputEditText serverUrlInput;
+    // Настройки ESP32
+    private TextInputEditText esp32IpInput;
+    private TextInputEditText esp32PortInput;
+    private SwitchMaterial useMdnsSwitch;
+    private TextInputEditText mdnsHostnameInput;
+
+    // Настройки штор
     private TextInputEditText curtainNameInput;
     private TextInputEditText curtainIdInput;
-    private TextInputEditText nodeMcuIpInput;
-    private TextInputEditText nodeMcuPortInput;
+
+    // Настройки приложения
     private TextInputEditText autoUpdateIntervalInput;
     private TextInputEditText connectionTimeoutInput;
     private SwitchMaterial vibrationSwitch;
     private SwitchMaterial soundSwitch;
-    private MaterialButton btnSave;
-    private MaterialButton btnTestConnection;
-    private MaterialButton btnResetDefaults;
-    private MaterialButton btnExportSettings;
+
+    // Кнопки
+    private Button saveButton;
+    private Button resetButton;
 
     private PreferencesManager preferencesManager;
-    private Vibrator vibrator;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
 
-        // Включить кнопку "Назад" в ActionBar
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setTitle("Настройки");
+        // Настройка тулбара
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        if (toolbar != null) {
+            setSupportActionBar(toolbar);
+            if (getSupportActionBar() != null) {
+                getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+                getSupportActionBar().setTitle("Настройки");
+            }
         }
+
+        preferencesManager = new PreferencesManager(this);
 
         initializeViews();
-        preferencesManager = new PreferencesManager(this);
-        vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-
         loadSettings();
         setupListeners();
-        setupBackPressHandler();
     }
 
-    /**
-     * Инициализация UI элементов
-     */
     private void initializeViews() {
-        serverUrlInput = findViewById(R.id.serverUrlInput);
-        curtainNameInput = findViewById(R.id.curtainNameInput);
-        curtainIdInput = findViewById(R.id.curtainIdInput);
-        nodeMcuIpInput = findViewById(R.id.nodeMcuIpInput);
-        nodeMcuPortInput = findViewById(R.id.nodeMcuPortInput);
-        autoUpdateIntervalInput = findViewById(R.id.autoUpdateIntervalInput);
-        connectionTimeoutInput = findViewById(R.id.connectionTimeoutInput);
-        vibrationSwitch = findViewById(R.id.vibrationSwitch);
-        soundSwitch = findViewById(R.id.soundSwitch);
-        btnSave = findViewById(R.id.btnSave);
-        btnTestConnection = findViewById(R.id.btnTestConnection);
-        btnResetDefaults = findViewById(R.id.btnResetDefaults);
-        btnExportSettings = findViewById(R.id.btnExportSettings);
+        // ESP32 настройки
+        esp32IpInput = findViewById(R.id.esp32_ip_input);
+        esp32PortInput = findViewById(R.id.esp32_port_input);
+        useMdnsSwitch = findViewById(R.id.use_mdns_switch);
+        mdnsHostnameInput = findViewById(R.id.mdns_hostname_input);
+
+        // Настройки штор
+        curtainNameInput = findViewById(R.id.curtain_name_input);
+        curtainIdInput = findViewById(R.id.curtain_id_input);
+
+        // Настройки приложения
+        autoUpdateIntervalInput = findViewById(R.id.auto_update_interval_input);
+        connectionTimeoutInput = findViewById(R.id.connection_timeout_input);
+        vibrationSwitch = findViewById(R.id.vibration_switch);
+        soundSwitch = findViewById(R.id.sound_switch);
+
+        // Кнопки
+        saveButton = findViewById(R.id.save_button);
+        resetButton = findViewById(R.id.reset_button);
     }
 
-    /**
-     * Загрузка текущих настроек
-     */
     private void loadSettings() {
-        serverUrlInput.setText(preferencesManager.getServerUrl());
-        curtainNameInput.setText(preferencesManager.getCurtainName());
-        curtainIdInput.setText(preferencesManager.getDefaultCurtainId());
-        nodeMcuIpInput.setText(preferencesManager.getNodeMcuIp());
-        nodeMcuPortInput.setText(String.valueOf(preferencesManager.getNodeMcuPort()));
-        autoUpdateIntervalInput.setText(String.valueOf(preferencesManager.getAutoUpdateInterval()));
-        connectionTimeoutInput.setText(String.valueOf(preferencesManager.getConnectionTimeout()));
-        vibrationSwitch.setChecked(preferencesManager.isVibrationEnabled());
-        soundSwitch.setChecked(preferencesManager.isSoundEnabled());
+        try {
+            // ESP32 настройки
+            if (esp32IpInput != null) esp32IpInput.setText(preferencesManager.getEsp32Ip());
+            if (esp32PortInput != null) esp32PortInput.setText(String.valueOf(preferencesManager.getEsp32Port()));
+            if (useMdnsSwitch != null) useMdnsSwitch.setChecked(preferencesManager.isUseMdns());
+            if (mdnsHostnameInput != null) mdnsHostnameInput.setText(preferencesManager.getMdnsHostname());
+
+            // Настройки штор
+            if (curtainNameInput != null) curtainNameInput.setText(preferencesManager.getCurtainName());
+            if (curtainIdInput != null) curtainIdInput.setText(preferencesManager.getDefaultCurtainId());
+
+            // Настройки приложения
+            if (autoUpdateIntervalInput != null) autoUpdateIntervalInput.setText(String.valueOf(preferencesManager.getAutoUpdateInterval()));
+            if (connectionTimeoutInput != null) connectionTimeoutInput.setText(String.valueOf(preferencesManager.getConnectionTimeout()));
+            if (vibrationSwitch != null) vibrationSwitch.setChecked(preferencesManager.isVibrationEnabled());
+            if (soundSwitch != null) soundSwitch.setChecked(preferencesManager.isSoundEnabled());
+
+            // Обновляем UI в зависимости от режима mDNS
+            updateMdnsUi();
+
+        } catch (Exception e) {
+            Toast.makeText(this, "Ошибка загрузки настроек: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
     }
 
-    /**
-     * Настройка слушателей событий
-     */
     private void setupListeners() {
-        btnSave.setOnClickListener(v -> {
-            vibrateIfEnabled();
-            saveSettings();
-        });
+        // Переключение режима mDNS
+        if (useMdnsSwitch != null) {
+            useMdnsSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                updateMdnsUi();
+            });
+        }
 
-        btnTestConnection.setOnClickListener(v -> {
-            vibrateIfEnabled();
-            testConnection();
-        });
+        // Кнопка сохранения
+        if (saveButton != null) {
+            saveButton.setOnClickListener(v -> saveSettings());
+        }
 
-        btnResetDefaults.setOnClickListener(v -> {
-            vibrateIfEnabled();
-            showResetConfirmationDialog();
-        });
-
-        btnExportSettings.setOnClickListener(v -> {
-            vibrateIfEnabled();
-            exportSettings();
-        });
+        // Кнопка сброса
+        if (resetButton != null) {
+            resetButton.setOnClickListener(v -> resetSettings());
+        }
     }
 
-    /**
-     * Сохранение настроек
-     */
+    private void updateMdnsUi() {
+        if (useMdnsSwitch == null) return;
+
+        boolean useMdns = useMdnsSwitch.isChecked();
+        if (mdnsHostnameInput != null) mdnsHostnameInput.setEnabled(useMdns);
+        if (esp32IpInput != null) esp32IpInput.setEnabled(!useMdns);
+        if (esp32PortInput != null) esp32PortInput.setEnabled(!useMdns);
+
+        if (useMdns && mdnsHostnameInput != null) {
+            mdnsHostnameInput.setHint("smart-curtain.local");
+        } else if (esp32IpInput != null) {
+            esp32IpInput.setHint("192.168.1.100");
+        }
+    }
+
     private void saveSettings() {
         try {
-            // Валидация полей
-            String serverUrl = serverUrlInput.getText().toString().trim();
-            String curtainName = curtainNameInput.getText().toString().trim();
-            String curtainId = curtainIdInput.getText().toString().trim();
-            String nodeMcuIp = nodeMcuIpInput.getText().toString().trim();
-            String nodeMcuPortStr = nodeMcuPortInput.getText().toString().trim();
-            String autoUpdateStr = autoUpdateIntervalInput.getText().toString().trim();
-            String timeoutStr = connectionTimeoutInput.getText().toString().trim();
-
-            // Проверка обязательных полей
-            if (serverUrl.isEmpty() || curtainId.isEmpty() || curtainName.isEmpty()) {
-                Toast.makeText(this, "❌ Заполните все обязательные поля", Toast.LENGTH_SHORT).show();
-                return;
+            // Сохраняем ESP32 настройки
+            if (esp32IpInput != null) {
+                preferencesManager.setEsp32Ip(esp32IpInput.getText().toString());
             }
 
-            // Проверка URL
-            if (!serverUrl.startsWith("http://") && !serverUrl.startsWith("https://")) {
-                Toast.makeText(this, "❌ URL должен начинаться с http:// или https://", Toast.LENGTH_SHORT).show();
-                return;
+            if (esp32PortInput != null) {
+                try {
+                    int port = Integer.parseInt(esp32PortInput.getText().toString());
+                    preferencesManager.setEsp32Port(port);
+                } catch (NumberFormatException e) {
+                    preferencesManager.setEsp32Port(80);
+                }
             }
 
-            // Парсинг числовых значений
-            int nodeMcuPort = Integer.parseInt(nodeMcuPortStr);
-            int autoUpdateInterval = Integer.parseInt(autoUpdateStr);
-            int connectionTimeout = Integer.parseInt(timeoutStr);
-
-            // Валидация диапазонов
-            if (nodeMcuPort < 1 || nodeMcuPort > 65535) {
-                Toast.makeText(this, "❌ Порт должен быть от 1 до 65535", Toast.LENGTH_SHORT).show();
-                return;
+            if (useMdnsSwitch != null) {
+                preferencesManager.setUseMdns(useMdnsSwitch.isChecked());
             }
 
-            if (autoUpdateInterval < 1000) {
-                Toast.makeText(this, "❌ Интервал обновления должен быть минимум 1000 мс", Toast.LENGTH_SHORT).show();
-                return;
+            if (mdnsHostnameInput != null) {
+                preferencesManager.setMdnsHostname(mdnsHostnameInput.getText().toString());
             }
 
-            if (connectionTimeout < 1000) {
-                Toast.makeText(this, "❌ Таймаут должен быть минимум 1000 мс", Toast.LENGTH_SHORT).show();
-                return;
+            // Сохраняем настройки штор
+            if (curtainNameInput != null) {
+                preferencesManager.setCurtainName(curtainNameInput.getText().toString());
             }
 
-            // Сохранение настроек
-            preferencesManager.setServerUrl(serverUrl);
-            preferencesManager.setCurtainName(curtainName);
-            preferencesManager.setDefaultCurtainId(curtainId);
-            preferencesManager.setNodeMcuIp(nodeMcuIp);
-            preferencesManager.setNodeMcuPort(nodeMcuPort);
-            preferencesManager.setAutoUpdateInterval(autoUpdateInterval);
-            preferencesManager.setConnectionTimeout(connectionTimeout);
-            preferencesManager.setVibrationEnabled(vibrationSwitch.isChecked());
-            preferencesManager.setSoundEnabled(soundSwitch.isChecked());
+            if (curtainIdInput != null) {
+                preferencesManager.setDefaultCurtainId(curtainIdInput.getText().toString());
+            }
 
-            Toast.makeText(this, "✅ Настройки сохранены успешно!", Toast.LENGTH_SHORT).show();
+            // Сохраняем настройки приложения
+            if (autoUpdateIntervalInput != null) {
+                try {
+                    int interval = Integer.parseInt(autoUpdateIntervalInput.getText().toString());
+                    preferencesManager.setAutoUpdateInterval(interval);
+                } catch (NumberFormatException e) {
+                    preferencesManager.setAutoUpdateInterval(2000);
+                }
+            }
 
-            // Возврат на главный экран
+            if (connectionTimeoutInput != null) {
+                try {
+                    int timeout = Integer.parseInt(connectionTimeoutInput.getText().toString());
+                    preferencesManager.setConnectionTimeout(timeout);
+                } catch (NumberFormatException e) {
+                    preferencesManager.setConnectionTimeout(3000);
+                }
+            }
+
+            if (vibrationSwitch != null) {
+                preferencesManager.setVibrationEnabled(vibrationSwitch.isChecked());
+            }
+
+            if (soundSwitch != null) {
+                preferencesManager.setSoundEnabled(soundSwitch.isChecked());
+            }
+
+            Toast.makeText(this, "Настройки сохранены", Toast.LENGTH_SHORT).show();
             finish();
 
-        } catch (NumberFormatException e) {
-            Toast.makeText(this, "❌ Ошибка: проверьте числовые значения", Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
-            Toast.makeText(this, "❌ Ошибка сохранения: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Ошибка сохранения: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 
-    /**
-     * Проверка соединения с сервером
-     */
-    private void testConnection() {
-        String serverUrl = serverUrlInput.getText().toString().trim();
-
-        if (serverUrl.isEmpty()) {
-            Toast.makeText(this, "❌ Введите URL сервера", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        Toast.makeText(this, "🔄 Проверка соединения...", Toast.LENGTH_SHORT).show();
-
-        CurtainApiClient apiClient = new CurtainApiClient(serverUrl);
-        apiClient.checkConnection(new CurtainApiClient.ApiCallback<Boolean>() {
-            @Override
-            public void onSuccess(Boolean isConnected) {
-                if (isConnected) {
-                    Toast.makeText(SettingsActivity.this, "✅ Соединение успешно!", Toast.LENGTH_LONG).show();
-                } else {
-                    Toast.makeText(SettingsActivity.this, "❌ Сервер не отвечает", Toast.LENGTH_LONG).show();
-                }
-                apiClient.shutdown();
-            }
-
-            @Override
-            public void onError(String error) {
-                Toast.makeText(SettingsActivity.this, "❌ Ошибка: " + error, Toast.LENGTH_LONG).show();
-                apiClient.shutdown();
-            }
-        });
-    }
-
-    /**
-     * Показать диалог подтверждения сброса
-     */
-    private void showResetConfirmationDialog() {
-        new AlertDialog.Builder(this)
-                .setTitle("🔄 Сброс настроек")
-                .setMessage("Вы уверены, что хотите сбросить все настройки к значениям по умолчанию?")
-                .setPositiveButton("Да, сбросить", (dialog, which) -> {
-                    resetToDefaults();
-                })
-                .setNegativeButton("Отмена", null)
-                .show();
-    }
-
-    /**
-     * Сброс к настройкам по умолчанию
-     */
-    private void resetToDefaults() {
-        preferencesManager.resetToDefaults();
-        loadSettings();
-        Toast.makeText(this, "✅ Настройки сброшены к значениям по умолчанию", Toast.LENGTH_SHORT).show();
-    }
-
-    /**
-     * Экспорт настроек в буфер обмена
-     */
-    private void exportSettings() {
-        String settings = preferencesManager.exportSettings();
-
-        ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-        ClipData clip = ClipData.newPlainText("Настройки приложения", settings);
-        clipboard.setPrimaryClip(clip);
-
-        // Показать диалог с настройками
-        new AlertDialog.Builder(this)
-                .setTitle("📤 Экспорт настроек")
-                .setMessage(settings + "\n\n✅ Настройки скопированы в буфер обмена!")
-                .setPositiveButton("OK", null)
-                .show();
-    }
-
-    /**
-     * Вибрация при нажатии (если включена)
-     */
-    private void vibrateIfEnabled() {
-        if (vibrationSwitch.isChecked() && vibrator != null && vibrator.hasVibrator()) {
-            vibrator.vibrate(50); // 50 мс
+    private void resetSettings() {
+        try {
+            preferencesManager.resetToDefaults();
+            loadSettings();
+            Toast.makeText(this, "Настройки сброшены к стандартным", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Toast.makeText(this, "Ошибка сброса: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Обработка нажатия кнопки "Назад" в ActionBar
-        if (item.getItemId() == android.R.id.home) {
-            finish();
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
-    }
-
-    /**
-     * Настройка обработчика кнопки "Назад"
-     */
-    private void setupBackPressHandler() {
-        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
-            @Override
-            public void handleOnBackPressed() {
-                // Предупреждение о несохраненных изменениях
-                new AlertDialog.Builder(SettingsActivity.this)
-                        .setTitle("⚠️ Выход")
-                        .setMessage("Вы хотите выйти без сохранения изменений?")
-                        .setPositiveButton("Выйти", (dialog, which) -> finish())
-                        .setNegativeButton("Остаться", null)
-                        .show();
-            }
-        });
+    public boolean onSupportNavigateUp() {
+        finish();
+        return true;
     }
 }

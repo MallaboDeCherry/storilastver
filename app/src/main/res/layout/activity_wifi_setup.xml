@@ -1,6 +1,272 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-             android:layout_width="match_parent"
-             android:layout_height="match_parent">
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/background_dark">
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    <!-- Градиентный заголовок -->
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@drawable/bg_gradient_header"
+        app:titleTextColor="@android:color/white"
+        app:title="Настройка Wi-Fi" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="16dp"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Статус с иконкой -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:layout_marginBottom="24dp">
+
+                <ImageView
+                    android:id="@+id/status_icon"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:src="@drawable/ic_wifi_setup"
+                    android:tint="#2196F3"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:id="@+id/status_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Поиск ESP32..."
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="#333333"
+                    android:gravity="center" />
+
+                <TextView
+                    android:id="@+id/status_detail"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Убедитесь, что ESP32 включен"
+                    android:textSize="12sp"
+                    android:textColor="#999999"
+                    android:gravity="center"
+                    android:layout_marginTop="4dp" />
+
+            </LinearLayout>
+
+            <ProgressBar
+                android:id="@+id/progress_bar"
+                android:layout_width="match_parent"
+                android:layout_height="4dp"
+                android:visibility="gone"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:progressTint="#2196F3" />
+
+            <!-- Шаг 1: Поиск ESP32 -->
+            <LinearLayout
+                android:id="@+id/scan_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="visible">
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="4dp"
+                    app:cardBackgroundColor="@android:color/white">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="20dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:layout_marginBottom="16dp">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="1. Поиск ESP32"
+                                android:textSize="18sp"
+                                android:textStyle="bold"
+                                android:textColor="#2196F3" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Шаг 1 из 2"
+                                android:textSize="12sp"
+                                android:textColor="#999999" />
+
+                        </LinearLayout>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/scan_button"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:text="🔍 Найти ESP32"
+                            android:textAllCaps="false"
+                            app:backgroundTint="#2196F3"
+                            android:textColor="@android:color/white"
+                            app:cornerRadius="12dp" />
+
+                        <TextView
+                            android:id="@+id/selected_device_text"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:text=""
+                            android:gravity="center"
+                            android:textSize="13sp"
+                            android:textColor="#4CAF50" />
+
+                        <ListView
+                            android:id="@+id/devices_list"
+                            android:layout_width="match_parent"
+                            android:layout_height="0dp"
+                            android:layout_weight="1"
+                            android:layout_marginTop="12dp"
+                            android:visibility="gone"
+                            android:background="@drawable/bg_list"
+                            android:divider="@android:color/transparent"
+                            android:dividerHeight="8dp"
+                            android:padding="8dp" />
+
+                    </LinearLayout>
+
+                </androidx.cardview.widget.CardView>
+
+            </LinearLayout>
+
+            <!-- Шаг 2: Настройка Wi-Fi -->
+            <LinearLayout
+                android:id="@+id/config_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="4dp"
+                    app:cardBackgroundColor="@android:color/white">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="20dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:layout_marginBottom="16dp">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="2. Выберите Wi-Fi"
+                                android:textSize="18sp"
+                                android:textStyle="bold"
+                                android:textColor="#2196F3" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Шаг 2 из 2"
+                                android:textSize="12sp"
+                                android:textColor="#999999" />
+
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/selected_wifi_text"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text=""
+                            android:gravity="center"
+                            android:textSize="13sp"
+                            android:textColor="#4CAF50"
+                            android:layout_marginBottom="12dp" />
+
+                        <ListView
+                            android:id="@+id/wifi_list"
+                            android:layout_width="match_parent"
+                            android:layout_height="0dp"
+                            android:layout_weight="1"
+                            android:layout_marginBottom="16dp"
+                            android:background="@drawable/bg_list"
+                            android:divider="@android:color/transparent"
+                            android:dividerHeight="8dp"
+                            android:padding="8dp" />
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:hint="🔒 Пароль Wi-Fi"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            app:passwordToggleEnabled="true"
+                            app:endIconMode="password_toggle">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/password_input"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="textPassword" />
+
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/connect_button"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:layout_marginTop="16dp"
+                            android:text="📡 Отправить и подключить"
+                            android:textAllCaps="false"
+                            app:backgroundTint="#4CAF50"
+                            android:textColor="@android:color/white"
+                            app:cornerRadius="12dp" />
+
+                    </LinearLayout>
+
+                </androidx.cardview.widget.CardView>
+
+            </LinearLayout>
+
+            <!-- Анимированная волна внизу -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="80dp"
+                android:layout_marginTop="16dp" />
+
+        </LinearLayout>
+
+    </ScrollView>
+
+</LinearLayout>

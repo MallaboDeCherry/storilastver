@@ -1,4 +1,4 @@
-package com.example.sshtori.devices;
+package com.example.sshtori;
 
 import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
@@ -44,24 +44,22 @@ import java.util.UUID;
 
 public class WiFiSetupActivity extends AppCompatActivity {
 
-    // BLE UUIDs (должны совпадать с ESP32)
     private static final UUID SERVICE_UUID = UUID.fromString("4fafc201-1fb5-459e-8fcc-c5c9c331914b");
     private static final UUID CHARACTERISTIC_UUID = UUID.fromString("beb5483e-36e1-4688-b7f5-ea07361b26a8");
 
-    // UI элементы
     private Toolbar toolbar;
     private TextView statusText;
     private ProgressBar progressBar;
     private LinearLayout scanLayout;
     private LinearLayout configLayout;
     private ListView devicesListView;
-    private EditText ssidInput;
+    private ListView wifiListView;
     private EditText passwordInput;
     private Button scanButton;
     private Button connectButton;
     private TextView selectedDeviceText;
+    private TextView selectedWifiText;
 
-    // BLE переменные
     private BluetoothAdapter bluetoothAdapter;
     private BluetoothGatt bluetoothGatt;
     private Handler handler = new Handler(Looper.getMainLooper());
@@ -71,10 +69,10 @@ public class WiFiSetupActivity extends AppCompatActivity {
     private boolean isScanning = false;
     private String selectedDeviceAddress = null;
     private String selectedDeviceName = null;
+    private String selectedSsid = null;
 
-    // Wi-Fi переменные
     private WifiManager wifiManager;
-    private List<String> wifiNetworks = new ArrayList<>();
+    private List<String> wifiNetworkNames = new ArrayList<>();
     private ArrayAdapter<String> wifiAdapter;
 
     @Override
@@ -98,14 +96,18 @@ public class WiFiSetupActivity extends AppCompatActivity {
         scanLayout = findViewById(R.id.scan_layout);
         configLayout = findViewById(R.id.config_layout);
         devicesListView = findViewById(R.id.devices_list);
-        ssidInput = findViewById(R.id.ssid_input);
+        wifiListView = findViewById(R.id.wifi_list);
         passwordInput = findViewById(R.id.password_input);
         scanButton = findViewById(R.id.scan_button);
         connectButton = findViewById(R.id.connect_button);
         selectedDeviceText = findViewById(R.id.selected_device_text);
+        selectedWifiText = findViewById(R.id.selected_wifi_text);
 
         devicesAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, deviceNames);
         devicesListView.setAdapter(devicesAdapter);
+
+        wifiAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, wifiNetworkNames);
+        wifiListView.setAdapter(wifiAdapter);
 
         wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
     }
@@ -182,16 +184,19 @@ public class WiFiSetupActivity extends AppCompatActivity {
             }
         });
 
-        connectButton.setOnClickListener(v -> {
-            String ssid = ssidInput.getText().toString().trim();
-            String password = passwordInput.getText().toString().trim();
+        wifiListView.setOnItemClickListener((parent, view, position, id) -> {
+            selectedSsid = wifiNetworkNames.get(position);
+            selectedWifiText.setText("Выбрана сеть: " + selectedSsid);
+            Toast.makeText(this, "Выбрана сеть: " + selectedSsid, Toast.LENGTH_SHORT).show();
+        });
 
-            if (ssid.isEmpty()) {
-                Toast.makeText(this, "Введите название Wi-Fi сети", Toast.LENGTH_SHORT).show();
+        connectButton.setOnClickListener(v -> {
+            if (selectedSsid == null) {
+                Toast.makeText(this, "Сначала выберите Wi-Fi сеть из списка", Toast.LENGTH_SHORT).show();
                 return;
             }
-
-            sendWiFiCredentials(ssid, password);
+            String password = passwordInput.getText().toString().trim();
+            sendWiFiCredentials(selectedSsid, password);
         });
     }
 
@@ -205,7 +210,7 @@ public class WiFiSetupActivity extends AppCompatActivity {
         devicesMap.clear();
         devicesAdapter.notifyDataSetChanged();
 
-        statusText.setText("🔍 Поиск ESP32...\n(Убедитесь, что ESP32 включен)");
+        statusText.setText("Поиск ESP32...");
         progressBar.setVisibility(View.VISIBLE);
         scanButton.setEnabled(false);
         isScanning = true;
@@ -214,7 +219,7 @@ public class WiFiSetupActivity extends AppCompatActivity {
             bluetoothAdapter.getBluetoothLeScanner().startScan(scanCallback);
             handler.postDelayed(this::stopScan, 15000);
         } catch (SecurityException e) {
-            statusText.setText("❌ Нет разрешения на сканирование");
+            statusText.setText("Нет разрешения на сканирование");
             progressBar.setVisibility(View.GONE);
             scanButton.setEnabled(true);
             isScanning = false;
@@ -232,9 +237,9 @@ public class WiFiSetupActivity extends AppCompatActivity {
             scanButton.setEnabled(true);
 
             if (deviceNames.isEmpty()) {
-                statusText.setText("❌ Устройства не найдены\n\nУбедитесь, что:\n• ESP32 включен\n• На ESP32 горит светодиод\n• ESP32 в режиме настройки");
+                statusText.setText("Устройства не найдены. Убедитесь, что ESP32 включен");
             } else {
-                statusText.setText("✅ Найдено " + deviceNames.size() + " устройств\nНажмите на устройство для подключения");
+                statusText.setText("Найдено " + deviceNames.size() + " устройств. Нажмите для выбора");
                 devicesListView.setVisibility(View.VISIBLE);
             }
         }
@@ -261,8 +266,7 @@ public class WiFiSetupActivity extends AppCompatActivity {
         public void onScanFailed(int errorCode) {
             runOnUiThread(() -> {
                 stopScan();
-                statusText.setText("❌ Ошибка сканирования BLE");
-                Toast.makeText(WiFiSetupActivity.this, "Ошибка сканирования", Toast.LENGTH_LONG).show();
+                statusText.setText("Ошибка сканирования BLE");
             });
         }
     };
@@ -270,15 +274,8 @@ public class WiFiSetupActivity extends AppCompatActivity {
     private void connectToESP32(String deviceAddress) {
         BluetoothDevice device = bluetoothAdapter.getRemoteDevice(deviceAddress);
 
-        statusText.setText("🔌 Подключение к ESP32...");
+        statusText.setText("Подключение к ESP32...");
         progressBar.setVisibility(View.VISIBLE);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-                ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT)
-                        != PackageManager.PERMISSION_GRANTED) {
-            Toast.makeText(this, "Нет разрешения Bluetooth", Toast.LENGTH_LONG).show();
-            return;
-        }
 
         bluetoothGatt = device.connectGatt(this, false, gattCallback);
 
@@ -287,22 +284,64 @@ public class WiFiSetupActivity extends AppCompatActivity {
                 scanLayout.setVisibility(View.GONE);
                 configLayout.setVisibility(View.VISIBLE);
                 progressBar.setVisibility(View.GONE);
-                statusText.setText("✅ Подключено к " + selectedDeviceName + "\nВведите данные вашей Wi-Fi сети");
+                statusText.setText("Подключено к " + selectedDeviceName + "\n\nШаг 2: Выберите Wi-Fi сеть");
+                scanWifiNetworks();
             });
         }, 2000);
+    }
+
+    private void scanWifiNetworks() {
+        if (!wifiManager.isWifiEnabled()) {
+            Toast.makeText(this, "Включите Wi-Fi для поиска сетей", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        statusText.setText("Поиск Wi-Fi сетей...");
+        wifiNetworkNames.clear();
+        wifiAdapter.notifyDataSetChanged();
+        wifiListView.setVisibility(View.VISIBLE);
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            Toast.makeText(this, "Нет разрешения на сканирование Wi-Fi", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        wifiManager.startScan();
+
+        handler.postDelayed(() -> {
+            List<android.net.wifi.ScanResult> results = wifiManager.getScanResults();
+
+            if (results == null || results.isEmpty()) {
+                statusText.setText("Wi-Fi сети не найдены");
+                return;
+            }
+
+            results.sort((a, b) -> Integer.compare(b.level, a.level));
+
+            for (android.net.wifi.ScanResult result : results) {
+                String ssid = result.SSID;
+                if (ssid != null && !ssid.isEmpty() && !ssid.equals(" ") && !wifiNetworkNames.contains(ssid)) {
+                    wifiNetworkNames.add(ssid);
+                }
+            }
+
+            runOnUiThread(() -> {
+                wifiAdapter.notifyDataSetChanged();
+                if (wifiNetworkNames.isEmpty()) {
+                    statusText.setText("Wi-Fi сети не найдены");
+                } else {
+                    statusText.setText("Найдено " + wifiNetworkNames.size() + " сетей. Выберите свою");
+                }
+            });
+        }, 3000);
     }
 
     private final BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             if (newState == BluetoothGatt.STATE_CONNECTED) {
-                runOnUiThread(() -> statusText.setText("✅ Подключено! Запрос сервисов..."));
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    if (ActivityCompat.checkSelfPermission(WiFiSetupActivity.this,
-                            Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-                        return;
-                    }
-                }
+                runOnUiThread(() -> statusText.setText("Подключено! Получение сервисов..."));
                 gatt.discoverServices();
             }
         }
@@ -310,7 +349,7 @@ public class WiFiSetupActivity extends AppCompatActivity {
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
-                runOnUiThread(() -> statusText.setText("✅ Устройство готово к настройке"));
+                runOnUiThread(() -> statusText.setText("Устройство готово"));
             }
         }
 
@@ -319,16 +358,16 @@ public class WiFiSetupActivity extends AppCompatActivity {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 runOnUiThread(() -> {
                     progressBar.setVisibility(View.GONE);
-                    statusText.setText("✅ Wi-Fi данные отправлены!\nESP32 перезагрузится и подключится к вашей сети");
+                    statusText.setText("Данные отправлены! ESP32 перезагрузится");
                     Toast.makeText(WiFiSetupActivity.this,
-                            "Настройки отправлены! ESP32 подключится к Wi-Fi через ~30 секунд",
+                            "Настройки отправлены! ESP32 подключится к Wi-Fi",
                             Toast.LENGTH_LONG).show();
                     handler.postDelayed(() -> finish(), 4000);
                 });
             } else {
                 runOnUiThread(() -> {
                     progressBar.setVisibility(View.GONE);
-                    statusText.setText("❌ Ошибка отправки данных");
+                    statusText.setText("Ошибка отправки");
                     Toast.makeText(WiFiSetupActivity.this, "Ошибка отправки", Toast.LENGTH_LONG).show();
                     connectButton.setEnabled(true);
                 });
@@ -346,7 +385,7 @@ public class WiFiSetupActivity extends AppCompatActivity {
 
         BluetoothGattService service = bluetoothGatt.getService(SERVICE_UUID);
         if (service == null) {
-            Toast.makeText(this, "Сервис не найден. Переподключитесь.", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Сервис не найден", Toast.LENGTH_LONG).show();
             return;
         }
 
@@ -356,22 +395,12 @@ public class WiFiSetupActivity extends AppCompatActivity {
             return;
         }
 
-        // Формат: "SSID:PASSWORD"
         String data = ssid + ":" + password;
         characteristic.setValue(data);
 
-        statusText.setText("📡 Отправка данных Wi-Fi...");
+        statusText.setText("Отправка...");
         progressBar.setVisibility(View.VISIBLE);
         connectButton.setEnabled(false);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-                ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT)
-                        != PackageManager.PERMISSION_GRANTED) {
-            progressBar.setVisibility(View.GONE);
-            statusText.setText("❌ Нет разрешения на отправку");
-            connectButton.setEnabled(true);
-            return;
-        }
 
         bluetoothGatt.writeCharacteristic(characteristic);
     }
@@ -391,10 +420,8 @@ public class WiFiSetupActivity extends AppCompatActivity {
         super.onDestroy();
         stopScan();
         if (bluetoothGatt != null) {
-            try {
-                bluetoothGatt.disconnect();
-                bluetoothGatt.close();
-            } catch (Exception ignored) {}
+            bluetoothGatt.disconnect();
+            bluetoothGatt.close();
         }
         handler.removeCallbacksAndMessages(null);
     }

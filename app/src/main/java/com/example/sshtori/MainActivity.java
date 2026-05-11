@@ -2,32 +2,37 @@ package com.example.sshtori;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Vibrator;
-import android.view.View;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.example.sshtori.models.CurtainCommand;
+import com.example.sshtori.controllers.CurtainController;
 import com.example.sshtori.models.CurtainState;
-import com.example.sshtori.models.ServerResponse;
-import com.example.sshtori.network.CurtainApiClient;
+import com.example.sshtori.network.Esp32NetworkManager;
 import com.example.sshtori.utils.PreferencesManager;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.slider.Slider;
+import com.google.android.material.snackbar.Snackbar;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-/**
- * Главная активность приложения для управления умными шторами
- */
+import com.example.sshtori.auth.LoginActivity;
+
 public class MainActivity extends AppCompatActivity {
 
     // UI элементы
@@ -36,49 +41,66 @@ public class MainActivity extends AppCompatActivity {
     private TextView curtainNameText;
     private TextView curtainStatusText;
     private TextView positionValueText;
-    private TextView serverUrlText;
+    private TextView infoText;
     private TextView lastUpdateText;
     private Slider positionSlider;
     private MaterialButton btnOpen, btnClose, btnStop, btnRefresh;
     private MaterialButton btnQuick25, btnQuick50, btnQuick75;
     private FloatingActionButton fab;
 
-    // Бизнес-логика
-    private CurtainApiClient apiClient;
     private PreferencesManager preferencesManager;
     private CurtainState currentState;
-    private Handler updateHandler;
-    private Runnable updateRunnable;
-    private boolean isSliderBeingDragged = false;
     private Vibrator vibrator;
+    private boolean isSliderBeingDragged = false;
+
+    // Контроллер для управления ESP32
+    private CurtainController curtainController;
+    private ExecutorService executorService;
+    private Handler mainHandler;
+    private Handler autoUpdateHandler;
+    private Runnable autoUpdateRunnable;
+    private boolean isUpdating = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Инициализация
+        // Проверка авторизации
+        SharedPreferences loginPrefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+
+        if (!loginPrefs.getBoolean("isLoggedIn", false)) {
+            Intent intent = new Intent(this, LoginActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            finish();
+            return;
+        }
+
+        mainHandler = new Handler(Looper.getMainLooper());
+        executorService = Executors.newSingleThreadExecutor();
+
         initializeViews();
-        initializeManagers();
+        initializeController();
         setupListeners();
 
-        // Первоначальная проверка соединения
+        // Показываем приветствие
+        showWelcomeMessage(loginPrefs);
+
+        // Проверяем соединение с ESP32
         checkConnection();
 
-        // Автоматическое обновление каждые 5 секунд
+        // Запускаем автообновление
         startAutoUpdate();
     }
 
-    /**
-     * Инициализация UI элементов
-     */
     private void initializeViews() {
         connectionStatusIcon = findViewById(R.id.connectionStatusIcon);
         connectionStatusText = findViewById(R.id.connectionStatusText);
         curtainNameText = findViewById(R.id.curtainNameText);
         curtainStatusText = findViewById(R.id.curtainStatusText);
         positionValueText = findViewById(R.id.positionValueText);
-        serverUrlText = findViewById(R.id.serverUrlText);
+        infoText = findViewById(R.id.serverUrlText);
         lastUpdateText = findViewById(R.id.lastUpdateText);
         positionSlider = findViewById(R.id.positionSlider);
 
@@ -90,62 +112,71 @@ public class MainActivity extends AppCompatActivity {
         btnQuick50 = findViewById(R.id.btnQuick50);
         btnQuick75 = findViewById(R.id.btnQuick75);
         fab = findViewById(R.id.fab);
+
+        vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+        preferencesManager = new PreferencesManager(this);
+
+        // Начальное состояние UI
+        positionSlider.setEnabled(false);
+        connectionStatusText.setText("Инициализация...");
     }
 
-    /**
-     * Инициализация менеджеров
-     */
-    private void initializeManagers() {
-        preferencesManager = new PreferencesManager(this);
-        vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+    private void initializeController() {
+        String esp32Ip = preferencesManager.getEsp32Ip();
+        int esp32Port = preferencesManager.getEsp32Port();
+        boolean useMdns = preferencesManager.isUseMdns();
 
-        String serverUrl = preferencesManager.getServerUrl();
-        apiClient = new CurtainApiClient(serverUrl);
-
-        serverUrlText.setText("Сервер: " + serverUrl);
+        if (useMdns) {
+            String mdnsHostname = preferencesManager.getMdnsHostname();
+            curtainController = new Esp32NetworkManager(mdnsHostname);
+            infoText.setText("ESP32: " + mdnsHostname);
+        } else {
+            curtainController = new Esp32NetworkManager(esp32Ip, esp32Port);
+            infoText.setText("ESP32: " + esp32Ip + ":" + esp32Port);
+        }
 
         currentState = new CurtainState();
-        currentState.setId(preferencesManager.getDefaultCurtainId());
-        currentState.setName(preferencesManager.getCurtainName());
+        currentState.setDeviceId(preferencesManager.getDefaultCurtainId());
+        currentState.setDeviceName(preferencesManager.getCurtainName());
+        curtainNameText.setText(currentState.getDeviceName());
     }
 
-    /**
-     * Настройка слушателей событий
-     */
     private void setupListeners() {
-        // Кнопки управления
         btnOpen.setOnClickListener(v -> {
             vibrateIfEnabled();
-            sendCommand("open");
+            sendOpenCommand();
         });
+
         btnClose.setOnClickListener(v -> {
             vibrateIfEnabled();
-            sendCommand("close");
+            sendCloseCommand();
         });
+
         btnStop.setOnClickListener(v -> {
             vibrateIfEnabled();
-            sendCommand("stop");
+            sendStopCommand();
         });
+
         btnRefresh.setOnClickListener(v -> {
             vibrateIfEnabled();
             refreshCurtainState();
         });
 
-        // Быстрые действия
         btnQuick25.setOnClickListener(v -> {
             vibrateIfEnabled();
             setPosition(25);
         });
+
         btnQuick50.setOnClickListener(v -> {
             vibrateIfEnabled();
             setPosition(50);
         });
+
         btnQuick75.setOnClickListener(v -> {
             vibrateIfEnabled();
             setPosition(75);
         });
 
-        // Слайдер позиции
         positionSlider.addOnChangeListener((slider, value, fromUser) -> {
             if (fromUser) {
                 positionValueText.setText((int) value + "%");
@@ -165,207 +196,344 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // FAB для настроек
         fab.setOnClickListener(v -> {
             vibrateIfEnabled();
             openSettingsActivity();
         });
     }
 
-    /**
-     * Открыть экран настроек
-     */
+    private void showWelcomeMessage(SharedPreferences loginPrefs) {
+        String userEmail = loginPrefs.getString("userEmail", "");
+        String loginType = loginPrefs.getString("loginType", "guest");
+
+        String welcomeMessage;
+        if (loginType.equals("guest")) {
+            welcomeMessage = "Добро пожаловать, Гость!";
+        } else {
+            String userName = userEmail.contains("@") ? userEmail.split("@")[0] : userEmail;
+            welcomeMessage = "С возвращением, " + userName + "!";
+        }
+        Toast.makeText(this, welcomeMessage, Toast.LENGTH_SHORT).show();
+    }
+
+    private void sendOpenCommand() {
+        if (curtainController == null) return;
+
+        curtainController.openCurtain(new CurtainController.CurtainCallback() {
+            @Override
+            public void onSuccess(Object result) {
+                mainHandler.post(() -> {
+                    Toast.makeText(MainActivity.this, "Открытие...", Toast.LENGTH_SHORT).show();
+                    refreshCurtainState();
+                });
+            }
+
+            @Override
+            public void onError(String error) {
+                mainHandler.post(() ->
+                        Toast.makeText(MainActivity.this, "Ошибка: " + error, Toast.LENGTH_LONG).show());
+            }
+        });
+    }
+
+    private void sendCloseCommand() {
+        if (curtainController == null) return;
+
+        curtainController.closeCurtain(new CurtainController.CurtainCallback() {
+            @Override
+            public void onSuccess(Object result) {
+                mainHandler.post(() -> {
+                    Toast.makeText(MainActivity.this, "Закрытие...", Toast.LENGTH_SHORT).show();
+                    refreshCurtainState();
+                });
+            }
+
+            @Override
+            public void onError(String error) {
+                mainHandler.post(() ->
+                        Toast.makeText(MainActivity.this, "Ошибка: " + error, Toast.LENGTH_LONG).show());
+            }
+        });
+    }
+
+    private void sendStopCommand() {
+        if (curtainController == null) return;
+
+        curtainController.stopCurtain(new CurtainController.CurtainCallback() {
+            @Override
+            public void onSuccess(Object result) {
+                mainHandler.post(() -> {
+                    Toast.makeText(MainActivity.this, "Остановлено", Toast.LENGTH_SHORT).show();
+                    refreshCurtainState();
+                });
+            }
+
+            @Override
+            public void onError(String error) {
+                mainHandler.post(() ->
+                        Toast.makeText(MainActivity.this, "Ошибка: " + error, Toast.LENGTH_LONG).show());
+            }
+        });
+    }
+
+    private void setPosition(int position) {
+        if (curtainController == null) return;
+
+        curtainController.setPosition(position, new CurtainController.CurtainCallback() {
+            @Override
+            public void onSuccess(Object result) {
+                mainHandler.post(() -> {
+                    Toast.makeText(MainActivity.this, "Позиция " + position + "%", Toast.LENGTH_SHORT).show();
+                    refreshCurtainState();
+                });
+            }
+
+            @Override
+            public void onError(String error) {
+                mainHandler.post(() -> {
+                    Toast.makeText(MainActivity.this, "Ошибка: " + error, Toast.LENGTH_LONG).show();
+                    if (!isSliderBeingDragged && currentState != null) {
+                        positionSlider.setValue(currentState.getPosition());
+                        positionValueText.setText(currentState.getPosition() + "%");
+                    }
+                });
+            }
+        });
+    }
+
+    private void refreshCurtainState() {
+        if (isUpdating || curtainController == null) return;
+
+        isUpdating = true;
+
+        curtainController.getState(new CurtainController.CurtainCallback() {
+            @Override
+            public void onSuccess(Object result) {
+                mainHandler.post(() -> {
+                    if (result instanceof CurtainState) {
+                        updateUI((CurtainState) result);
+                    }
+                    isUpdating = false;
+                });
+            }
+
+            @Override
+            public void onError(String error) {
+                mainHandler.post(() -> {
+                    isUpdating = false;
+                });
+            }
+        });
+    }
+
+    private void checkConnection() {
+        if (curtainController == null) return;
+
+        curtainController.checkConnection(new CurtainController.CurtainCallback() {
+            @Override
+            public void onSuccess(Object result) {
+                mainHandler.post(() -> {
+                    boolean connected = result instanceof Boolean && (Boolean) result;
+                    if (connected) {
+                        connectionStatusIcon.setImageResource(android.R.drawable.presence_online);
+                        connectionStatusText.setText("Подключено");
+                        connectionStatusText.setTextColor(getResources().getColor(android.R.color.holo_green_dark));
+                        positionSlider.setEnabled(true);
+                        refreshCurtainState();
+                    } else {
+                        connectionStatusIcon.setImageResource(android.R.drawable.presence_offline);
+                        connectionStatusText.setText("ESP32 не найден");
+                        connectionStatusText.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
+                        positionSlider.setEnabled(false);
+
+                        Snackbar.make(findViewById(android.R.id.content),
+                                        "ESP32 не найден. Проверьте настройки.", Snackbar.LENGTH_LONG)
+                                .setAction("Настройки", v -> openSettingsActivity())
+                                .show();
+                    }
+                });
+            }
+
+            @Override
+            public void onError(String error) {
+                mainHandler.post(() -> {
+                    connectionStatusIcon.setImageResource(android.R.drawable.presence_offline);
+                    connectionStatusText.setText("Ошибка: " + error);
+                    connectionStatusText.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
+                });
+            }
+        });
+    }
+
+    private void updateUI(CurtainState state) {
+        if (state == null) return;
+
+        currentState = state;
+
+        curtainNameText.setText(preferencesManager.getCurtainName());
+        curtainStatusText.setText("Статус: " + state.getFormattedStatus());
+
+        int position = state.getPosition();
+        if (position >= 0) {
+            positionValueText.setText(position + "%");
+            if (!isSliderBeingDragged) {
+                positionSlider.setValue(position);
+            }
+        } else {
+            positionValueText.setText("N/A");
+        }
+
+        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
+        lastUpdateText.setText("Обновлено: " + sdf.format(new Date(state.getLastUpdate())));
+
+        // Блокируем слайдер при движении
+        positionSlider.setEnabled(!state.isMoving() && connectionStatusText.getText().toString().equals("Подключено"));
+
+        // Обновляем цвета
+        if (state.isMoving()) {
+            curtainStatusText.setTextColor(getResources().getColor(android.R.color.holo_orange_dark));
+        } else if (state.isOpened()) {
+            curtainStatusText.setTextColor(getResources().getColor(android.R.color.holo_green_dark));
+        } else if (state.isClosed()) {
+            curtainStatusText.setTextColor(getResources().getColor(android.R.color.darker_gray));
+        } else {
+            curtainStatusText.setTextColor(getResources().getColor(android.R.color.holo_blue_dark));
+        }
+    }
+
+    private void startAutoUpdate() {
+        if (autoUpdateHandler == null) {
+            autoUpdateHandler = new Handler(Looper.getMainLooper());
+        }
+
+        if (autoUpdateRunnable != null) {
+            autoUpdateHandler.removeCallbacks(autoUpdateRunnable);
+        }
+
+        autoUpdateRunnable = () -> {
+            refreshCurtainState();
+            int interval = preferencesManager.getAutoUpdateInterval();
+            if (interval > 0) {
+                autoUpdateHandler.postDelayed(autoUpdateRunnable, interval);
+            }
+        };
+
+        int interval = preferencesManager.getAutoUpdateInterval();
+        autoUpdateHandler.postDelayed(autoUpdateRunnable, interval);
+    }
+
+    private void stopAutoUpdate() {
+        if (autoUpdateHandler != null && autoUpdateRunnable != null) {
+            autoUpdateHandler.removeCallbacks(autoUpdateRunnable);
+        }
+    }
+
+    private void vibrateIfEnabled() {
+        if (preferencesManager.isVibrationEnabled() && vibrator != null && vibrator.hasVibrator()) {
+            vibrator.vibrate(50);
+        }
+    }
+
     private void openSettingsActivity() {
         Intent intent = new Intent(this, SettingsActivity.class);
         startActivity(intent);
     }
 
-    /**
-     * Вибрация при нажатии (если включена)
-     */
-    private void vibrateIfEnabled() {
-        if (preferencesManager.isVibrationEnabled() && vibrator != null && vibrator.hasVibrator()) {
-            vibrator.vibrate(50); // 50 мс
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        if (id == R.id.action_logout) {
+            logout();
+            return true;
+        } else if (id == R.id.action_account) {
+            showAccountInfo();
+            return true;
+        } else if (id == R.id.action_calibrate) {
+            showCalibrateDialog();
+            return true;
         }
+        return super.onOptionsItemSelected(item);
     }
 
-    /**
-     * Отправка команды на сервер
-     */
-    private void sendCommand(String action) {
-        String curtainId = preferencesManager.getDefaultCurtainId();
-        CurtainCommand command = new CurtainCommand(curtainId, action);
-
-        apiClient.sendCommand(command, new CurtainApiClient.ApiCallback<ServerResponse>() {
-            @Override
-            public void onSuccess(ServerResponse result) {
-                if (result.isSuccess()) {
-                    Toast.makeText(MainActivity.this, "Команда отправлена", Toast.LENGTH_SHORT).show();
-                    if (result.getCurtainState() != null) {
-                        updateUI(result.getCurtainState());
-                    }
-                    // Обновить состояние через секунду
-                    new Handler().postDelayed(() -> refreshCurtainState(), 1000);
-                } else {
-                    Toast.makeText(MainActivity.this, "Ошибка: " + result.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            }
-
-            @Override
-            public void onError(String error) {
-                Toast.makeText(MainActivity.this, "Ошибка: " + error, Toast.LENGTH_SHORT).show();
-            }
-        });
+    private void showCalibrateDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle("Калибровка штор")
+                .setMessage("Калибровка позволит определить крайние положения шторы.\n\nПродолжить?")
+                .setPositiveButton("Начать", (dialog, which) -> sendCalibrateCommand())
+                .setNegativeButton("Отмена", null)
+                .show();
     }
 
-    /**
-     * Установка позиции штор
-     */
-    private void setPosition(int position) {
-        String curtainId = preferencesManager.getDefaultCurtainId();
-        CurtainCommand command = new CurtainCommand(curtainId, "set_position", position);
+    private void sendCalibrateCommand() {
+        if (curtainController == null) return;
 
-        apiClient.sendCommand(command, new CurtainApiClient.ApiCallback<ServerResponse>() {
-            @Override
-            public void onSuccess(ServerResponse result) {
-                if (result.isSuccess()) {
-                    Toast.makeText(MainActivity.this, "Позиция установлена: " + position + "%", Toast.LENGTH_SHORT).show();
-                    if (result.getCurtainState() != null) {
-                        updateUI(result.getCurtainState());
-                    }
-                } else {
-                    Toast.makeText(MainActivity.this, "Ошибка: " + result.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            }
+        vibrateIfEnabled();
+        Toast.makeText(this, "Начинаем калибровку...", Toast.LENGTH_LONG).show();
 
-            @Override
-            public void onError(String error) {
-                Toast.makeText(MainActivity.this, "Ошибка: " + error, Toast.LENGTH_SHORT).show();
-            }
-        });
+        // TODO: Добавить метод calibrate в интерфейс CurtainController и Esp32NetworkManager
+        // Пока показываем сообщение
+        Toast.makeText(this, "Функция калибровки будет добавлена", Toast.LENGTH_SHORT).show();
     }
 
-    /**
-     * Обновление состояния штор
-     */
-    private void refreshCurtainState() {
-        String curtainId = preferencesManager.getDefaultCurtainId();
+    private void logout() {
+        SharedPreferences loginPrefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+        SharedPreferences.Editor editor = loginPrefs.edit();
+        editor.clear();
+        editor.apply();
 
-        apiClient.getCurtainState(curtainId, new CurtainApiClient.ApiCallback<CurtainState>() {
-            @Override
-            public void onSuccess(CurtainState result) {
-                updateUI(result);
-            }
+        stopAutoUpdate();
 
-            @Override
-            public void onError(String error) {
-                Toast.makeText(MainActivity.this, "Ошибка обновления: " + error, Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    /**
-     * Проверка соединения с сервером
-     */
-    private void checkConnection() {
-        connectionStatusText.setText("Проверка соединения...");
-
-        apiClient.checkConnection(new CurtainApiClient.ApiCallback<Boolean>() {
-            @Override
-            public void onSuccess(Boolean isConnected) {
-                if (isConnected) {
-                    connectionStatusIcon.setImageResource(android.R.drawable.presence_online);
-                    connectionStatusText.setText("Подключено");
-                    connectionStatusText.setTextColor(getResources().getColor(R.color.status_connected, null));
-                    refreshCurtainState();
-                } else {
-                    connectionStatusIcon.setImageResource(android.R.drawable.presence_offline);
-                    connectionStatusText.setText("Не подключено");
-                    connectionStatusText.setTextColor(getResources().getColor(R.color.status_disconnected, null));
-                }
-            }
-
-            @Override
-            public void onError(String error) {
-                connectionStatusIcon.setImageResource(android.R.drawable.presence_offline);
-                connectionStatusText.setText("Ошибка соединения");
-                connectionStatusText.setTextColor(getResources().getColor(R.color.status_disconnected, null));
-            }
-        });
-    }
-
-    /**
-     * Обновление UI с новым состоянием
-     */
-    private void updateUI(CurtainState state) {
-        currentState = state;
-
-        curtainNameText.setText(state.getName());
-        curtainStatusText.setText("Статус: " + state.getStatusInRussian());
-        positionValueText.setText(state.getPosition() + "%");
-
-        if (!isSliderBeingDragged) {
-            positionSlider.setValue(state.getPosition());
+        if (curtainController != null) {
+            curtainController.shutdown();
         }
 
-        // Обновление времени
-        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
-        lastUpdateText.setText("Последнее обновление: " + sdf.format(new Date(state.getLastUpdate())));
-
-        // Изменение цвета статуса
-        if (state.isMoving()) {
-            curtainStatusText.setTextColor(getResources().getColor(R.color.status_moving, null));
-        } else {
-            curtainStatusText.setTextColor(getResources().getColor(R.color.status_connected, null));
-        }
+        Intent intent = new Intent(this, LoginActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
     }
 
+    private void showAccountInfo() {
+        SharedPreferences loginPrefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+        String userEmail = loginPrefs.getString("userEmail", "");
+        String loginType = loginPrefs.getString("loginType", "guest");
 
+        String message = loginType.equals("guest")
+                ? "Вы вошли как гость\n\nESP32: " + infoText.getText()
+                : "Email: " + userEmail + "\n\nESP32: " + infoText.getText() + "\n\nШторы: " + preferencesManager.getCurtainName();
 
-    /**
-     * Запуск автоматического обновления
-     */
-    private void startAutoUpdate() {
-        updateHandler = new Handler();
-        updateRunnable = new Runnable() {
-            @Override
-            public void run() {
-                refreshCurtainState();
-                int interval = preferencesManager.getAutoUpdateInterval();
-                updateHandler.postDelayed(this, interval);
-            }
-        };
-        int interval = preferencesManager.getAutoUpdateInterval();
-        updateHandler.postDelayed(updateRunnable, interval);
-    }
-
-    /**
-     * Остановка автоматического обновления
-     */
-    private void stopAutoUpdate() {
-        if (updateHandler != null && updateRunnable != null) {
-            updateHandler.removeCallbacks(updateRunnable);
-        }
+        new AlertDialog.Builder(this)
+                .setTitle("Информация")
+                .setMessage(message)
+                .setPositiveButton("OK", null)
+                .show();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        // Перезагрузить настройки при возврате из настроек
-        reloadSettings();
-        startAutoUpdate();
-    }
+        if (curtainController != null) {
+            // Обновляем настройки клиента
+            String esp32Ip = preferencesManager.getEsp32Ip();
+            int esp32Port = preferencesManager.getEsp32Port();
+            boolean useMdns = preferencesManager.isUseMdns();
 
-    /**
-     * Перезагрузка настроек
-     */
-    private void reloadSettings() {
-        String serverUrl = preferencesManager.getServerUrl();
-        apiClient.setServerUrl(serverUrl);
-        serverUrlText.setText("Сервер: " + serverUrl);
-        currentState.setId(preferencesManager.getDefaultCurtainId());
-        currentState.setName(preferencesManager.getCurtainName());
-        curtainNameText.setText(currentState.getName());
+            if (curtainController instanceof Esp32NetworkManager) {
+                if (useMdns) {
+                    ((Esp32NetworkManager) curtainController).updateAddress(preferencesManager.getMdnsHostname());
+                } else {
+                    ((Esp32NetworkManager) curtainController).updateAddress(esp32Ip, esp32Port);
+                }
+            }
+        }
+        startAutoUpdate();
+        checkConnection();
     }
 
     @Override
@@ -378,8 +546,11 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         stopAutoUpdate();
-        if (apiClient != null) {
-            apiClient.shutdown();
+        if (curtainController != null) {
+            curtainController.shutdown();
+        }
+        if (executorService != null) {
+            executorService.shutdown();
         }
     }
 }

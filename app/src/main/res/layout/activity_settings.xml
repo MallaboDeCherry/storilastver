@@ -1,380 +1,245 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true">
+    android:orientation="vertical">
 
-    <LinearLayout
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
+        android:layout_height="?attr/actionBarSize"
+        android:background="?attr/colorPrimary"
+        app:titleTextColor="@android:color/white" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:padding="16dp">
 
-        <!-- Заголовок -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardElevation="2dp"
-            app:cardCornerRadius="12dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="⚙️ Настройки приложения"
-                    android:textSize="24sp"
-                    android:textStyle="bold"
-                    android:textColor="?attr/colorPrimary" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="Настройте параметры подключения и поведения"
-                    android:textSize="14sp"
-                    android:textColor="?android:attr/textColorSecondary" />
-
-            </LinearLayout>
-
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Секция: Подключение к серверу -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="🌐 Подключение к серверу"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="12dp"
-            android:textColor="?attr/colorPrimary" />
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardElevation="2dp"
-            app:cardCornerRadius="12dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    android:hint="URL Python сервера"
-                    app:startIconDrawable="@android:drawable/ic_menu_compass"
-                    app:helperText="Например: http://192.168.1.100:5000">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/serverUrlInput"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="textUri" />
-
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Таймаут соединения (мс)"
-                    app:startIconDrawable="@android:drawable/ic_menu_recent_history"
-                    app:helperText="Время ожидания ответа от сервера">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/connectionTimeoutInput"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="number" />
-
-                </com.google.android.material.textfield.TextInputLayout>
-
-            </LinearLayout>
-
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Секция: Настройки штор -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="🪟 Настройки штор"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="12dp"
-            android:textColor="?attr/colorPrimary" />
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardElevation="2dp"
-            app:cardCornerRadius="12dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    android:hint="Название штор"
-                    app:startIconDrawable="@android:drawable/ic_menu_edit"
-                    app:helperText="Отображаемое имя">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/curtainNameInput"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="text" />
-
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="ID штор"
-                    app:startIconDrawable="@android:drawable/ic_menu_info_details"
-                    app:helperText="Уникальный идентификатор">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/curtainIdInput"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="text" />
-
-                </com.google.android.material.textfield.TextInputLayout>
-
-            </LinearLayout>
-
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Секция: NodeMCU настройки -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="📡 Настройки NodeMCU (ESP32)"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="12dp"
-            android:textColor="?attr/colorPrimary" />
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardElevation="2dp"
-            app:cardCornerRadius="12dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    android:hint="IP адрес NodeMCU"
-                    app:startIconDrawable="@android:drawable/ic_menu_mylocation"
-                    app:helperText="Например: 192.168.1.101">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/nodeMcuIpInput"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="text" />
-
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Порт NodeMCU"
-                    app:startIconDrawable="@android:drawable/ic_menu_sort_by_size"
-                    app:helperText="Обычно 80">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/nodeMcuPortInput"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="number" />
-
-                </com.google.android.material.textfield.TextInputLayout>
-
-            </LinearLayout>
-
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Секция: Поведение приложения -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="⚡ Поведение приложения"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="12dp"
-            android:textColor="?attr/colorPrimary" />
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardElevation="2dp"
-            app:cardCornerRadius="12dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    android:hint="Интервал автообновления (мс)"
-                    app:startIconDrawable="@android:drawable/ic_menu_rotate"
-                    app:helperText="Как часто обновлять состояние (5000 = 5 сек)">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/autoUpdateIntervalInput"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="number" />
-
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <!-- Переключатель вибрации -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="12dp">
-
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@android:drawable/ic_lock_silent_mode_off"
-                        android:layout_marginEnd="16dp"
-                        android:contentDescription="Vibration icon" />
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Вибрация при нажатии"
-                        android:textSize="16sp" />
-
-                    <com.google.android.material.switchmaterial.SwitchMaterial
-                        android:id="@+id/vibrationSwitch"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" />
-
-                </LinearLayout>
-
-                <!-- Переключатель звука -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@android:drawable/ic_lock_silent_mode"
-                        android:layout_marginEnd="16dp"
-                        android:contentDescription="Sound icon" />
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Звуковые уведомления"
-                        android:textSize="16sp" />
-
-                    <com.google.android.material.switchmaterial.SwitchMaterial
-                        android:id="@+id/soundSwitch"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" />
-
-                </LinearLayout>
-
-            </LinearLayout>
-
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Кнопки действий -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="16dp">
+            android:orientation="vertical">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnSave"
+            <!-- Настройки ESP32 -->
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:layout_marginBottom="8dp"
-                android:text="💾 Сохранить настройки"
-                android:textSize="16sp"
-                app:icon="@android:drawable/ic_menu_save"
-                app:iconGravity="textStart" />
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnTestConnection"
-                android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:layout_marginBottom="8dp"
-                android:text="🔌 Проверить соединение"
-                android:textSize="16sp"
-                style="@style/Widget.Material3.Button.OutlinedButton"
-                app:icon="@android:drawable/ic_menu_search"
-                app:iconGravity="textStart" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnResetDefaults"
-                android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:layout_marginBottom="8dp"
-                android:text="🔄 Сбросить к значениям по умолчанию"
-                android:textSize="16sp"
-                style="@style/Widget.Material3.Button.TextButton"
-                app:icon="@android:drawable/ic_menu_revert"
-                app:iconGravity="textStart" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Настройки ESP32"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="12dp" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnExportSettings"
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/use_mdns_switch"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Использовать mDNS" />
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:hint="mDNS имя хоста">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/mdns_hostname_input"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="smart-curtain.local" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:hint="IP адрес ESP32">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/esp32_ip_input"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="192.168.1.100" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:hint="Порт ESP32">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/esp32_port_input"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="number"
+                            android:text="80" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Настройки штор -->
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:text="📤 Экспорт настроек"
-                android:textSize="16sp"
-                style="@style/Widget.Material3.Button.TextButton"
-                app:icon="@android:drawable/ic_menu_share"
-                app:iconGravity="textStart" />
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Настройки штор"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="12dp" />
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Название штор">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/curtain_name_input"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Умные шторы" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:hint="ID шторы">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/curtain_id_input"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="curtain_1" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Настройки приложения -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Настройки приложения"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="12dp" />
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Интервал автообновления (мс)">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/auto_update_interval_input"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="number"
+                            android:text="2000" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:hint="Таймаут соединения (мс)">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/connection_timeout_input"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="number"
+                            android:text="3000" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/vibration_switch"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="Вибрация при нажатии" />
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/sound_switch"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Звук" />
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Кнопки -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="32dp"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/reset_button"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    android:text="Сброс"
+                    style="@style/Widget.Material3.Button.OutlinedButton" />
+
+                <Button
+                    android:id="@+id/save_button"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Сохранить" />
+
+            </LinearLayout>
 
         </LinearLayout>
 
-    </LinearLayout>
+    </ScrollView>
 
-</ScrollView>
+</LinearLayout>

@@ -1,21 +1,22 @@
-package com.example.sshtori;
+package com.example.sshtori.auth;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import com.google.android.material.textfield.TextInputLayout;
+
+import com.example.sshtori.R;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.android.material.textfield.TextInputLayout;
+import com.example.sshtori.devices.DeviceHubActivity;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -23,7 +24,7 @@ public class LoginActivity extends AppCompatActivity {
     private Button btnLogin, btnGuest;
     private TextView tvRegisterLink, tvForgotPassword;
     private ProgressBar progressBar;
-    private LinearLayout loginForm;
+    private View loginForm;
     private SharedPreferences prefs;
     private TextInputLayout tilEmail, tilPassword;
 
@@ -32,12 +33,10 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        // Инициализация
+        // Инициализация всех компонентов
         initViews();
         setupToolbar();
         setupClickListeners();
-
-        // Проверяем, есть ли сохраненная сессия
         checkSavedSession();
     }
 
@@ -80,8 +79,7 @@ public class LoginActivity extends AppCompatActivity {
         String savedEmail = prefs.getString("userEmail", "");
 
         if (isLoggedIn && !savedEmail.isEmpty()) {
-            // Автоматический вход
-            navigateToMain();
+            navigateToDeviceHub();
         }
     }
 
@@ -89,15 +87,11 @@ public class LoginActivity extends AppCompatActivity {
         String email = etEmail.getText().toString().trim();
         String password = etPassword.getText().toString().trim();
 
-        // Валидация
         if (!validateInputs(email, password)) {
             return;
         }
 
-        // Показываем прогресс
         showProgress(true);
-
-        // Имитация проверки логина (замените на реальный API запрос)
         performLogin(email, password);
     }
 
@@ -128,27 +122,19 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void performLogin(String email, String password) {
-        // Имитация задержки сети
         new android.os.Handler().postDelayed(() -> {
-            // Здесь должен быть реальный запрос к вашему серверу
-            // Пример для демонстрации:
-            if (isValidCredentials(email, password)) {
+            SharedPreferences regPrefs = getSharedPreferences("RegisteredUsers", MODE_PRIVATE);
+            String savedPassword = regPrefs.getString(email, "");
+
+            if (savedPassword.equals(password) && !savedPassword.isEmpty()) {
                 saveUserSession(email);
-                navigateToMain();
+                navigateToDeviceHub();
             } else {
                 showProgress(false);
                 Snackbar.make(findViewById(android.R.id.content),
                         "Неверный email или пароль", Snackbar.LENGTH_LONG).show();
             }
         }, 1500);
-    }
-
-    private boolean isValidCredentials(String email, String password) {
-        // Здесь проверка в вашей базе данных или на сервере
-        // Сейчас просто демо-пользователь
-        SharedPreferences regPrefs = getSharedPreferences("RegisteredUsers", MODE_PRIVATE);
-        String savedPassword = regPrefs.getString(email, "");
-        return savedPassword.equals(password) && !savedPassword.isEmpty();
     }
 
     private void saveUserSession(String email) {
@@ -168,13 +154,12 @@ public class LoginActivity extends AppCompatActivity {
                     editor.putBoolean("isLoggedIn", true);
                     editor.putString("loginType", "guest");
                     editor.apply();
-                    navigateToMain();
+                    navigateToDeviceHub();
                 })
                 .show();
     }
 
     private void showForgotPasswordDialog() {
-        // Диалог восстановления пароля
         android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
         builder.setTitle("Восстановление пароля");
 
@@ -204,8 +189,8 @@ public class LoginActivity extends AppCompatActivity {
         progressBar.animate().setDuration(shortAnimTime).alpha(show ? 1 : 0);
     }
 
-    private void navigateToMain() {
-        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+    private void navigateToDeviceHub() {
+        Intent intent = new Intent(LoginActivity.this, DeviceHubActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();

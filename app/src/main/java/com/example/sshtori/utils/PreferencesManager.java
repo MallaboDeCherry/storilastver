@@ -5,31 +5,50 @@ import android.content.SharedPreferences;
 
 /**
  * Менеджер для работы с настройками приложения
+ * Версия 2.0 - для прямого управления ESP32
  */
 public class PreferencesManager {
     private static final String PREFS_NAME = "CurtainAppPrefs";
 
-    // Ключи настроек
-    private static final String KEY_SERVER_URL = "server_url";
-    private static final String KEY_DEFAULT_CURTAIN_ID = "default_curtain_id";
-    private static final String KEY_NODEMCU_IP = "nodemcu_ip";
-    private static final String KEY_NODEMCU_PORT = "nodemcu_port";
+    // Ключи настроек ESP32
+    private static final String KEY_ESP32_IP = "esp32_ip";
+    private static final String KEY_ESP32_PORT = "esp32_port";
+    private static final String KEY_USE_MDNS = "use_mdns";
+    private static final String KEY_MDNS_HOSTNAME = "mdns_hostname";
+
+    // Ключи настроек штор
+    private static final String KEY_CURTAIN_ID = "curtain_id";
+    private static final String KEY_CURTAIN_NAME = "curtain_name";
+
+    // Ключи настроек приложения
     private static final String KEY_AUTO_UPDATE_INTERVAL = "auto_update_interval";
     private static final String KEY_CONNECTION_TIMEOUT = "connection_timeout";
     private static final String KEY_ENABLE_VIBRATION = "enable_vibration";
     private static final String KEY_ENABLE_SOUND = "enable_sound";
-    private static final String KEY_CURTAIN_NAME = "curtain_name";
+    private static final String KEY_SHOW_CONNECTION_ERRORS = "show_connection_errors";
+    private static final String KEY_FIRST_LAUNCH = "first_launch";
 
-    // Значения по умолчанию
-    private static final String DEFAULT_SERVER_URL = "http://192.168.1.100:5000";
+    // ============= НОВЫЕ КЛЮЧИ ДЛЯ АВТОРИЗАЦИИ =============
+    private static final String KEY_IS_LOGGED_IN = "is_logged_in";
+    private static final String KEY_USER_EMAIL = "user_email";
+    private static final String KEY_LOGIN_TYPE = "login_type"; // "registered" или "guest"
+
+    // Значения по умолчанию для ESP32
+    private static final String DEFAULT_ESP32_IP = "192.168.1.100";
+    private static final int DEFAULT_ESP32_PORT = 80;
+    private static final boolean DEFAULT_USE_MDNS = true;
+    private static final String DEFAULT_MDNS_HOSTNAME = "smart-curtain.local";
+
+    // Значения по умолчанию для штор
     private static final String DEFAULT_CURTAIN_ID = "curtain_1";
-    private static final String DEFAULT_CURTAIN_NAME = "Штора 1";
-    private static final String DEFAULT_NODEMCU_IP = "192.168.1.101";
-    private static final int DEFAULT_NODEMCU_PORT = 80;
-    private static final int DEFAULT_AUTO_UPDATE_INTERVAL = 5000; // 5 секунд
-    private static final int DEFAULT_CONNECTION_TIMEOUT = 5000; // 5 секунд
+    private static final String DEFAULT_CURTAIN_NAME = "Умные шторы";
+
+    // Значения по умолчанию для приложения
+    private static final int DEFAULT_AUTO_UPDATE_INTERVAL = 2000;
+    private static final int DEFAULT_CONNECTION_TIMEOUT = 3000;
     private static final boolean DEFAULT_ENABLE_VIBRATION = true;
     private static final boolean DEFAULT_ENABLE_SOUND = false;
+    private static final boolean DEFAULT_SHOW_CONNECTION_ERRORS = true;
 
     private final SharedPreferences preferences;
 
@@ -37,25 +56,50 @@ public class PreferencesManager {
         this.preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
     }
 
-    // ========== URL сервера ==========
-    public String getServerUrl() {
-        return preferences.getString(KEY_SERVER_URL, DEFAULT_SERVER_URL);
+    // ========== ESP32 НАСТРОЙКИ ==========
+
+    public String getEsp32Ip() {
+        return preferences.getString(KEY_ESP32_IP, DEFAULT_ESP32_IP);
     }
 
-    public void setServerUrl(String url) {
-        preferences.edit().putString(KEY_SERVER_URL, url).apply();
+    public void setEsp32Ip(String ip) {
+        preferences.edit().putString(KEY_ESP32_IP, ip).apply();
     }
 
-    // ========== ID штор ==========
+    public int getEsp32Port() {
+        return preferences.getInt(KEY_ESP32_PORT, DEFAULT_ESP32_PORT);
+    }
+
+    public void setEsp32Port(int port) {
+        preferences.edit().putInt(KEY_ESP32_PORT, port).apply();
+    }
+
+    public boolean isUseMdns() {
+        return preferences.getBoolean(KEY_USE_MDNS, DEFAULT_USE_MDNS);
+    }
+
+    public void setUseMdns(boolean use) {
+        preferences.edit().putBoolean(KEY_USE_MDNS, use).apply();
+    }
+
+    public String getMdnsHostname() {
+        return preferences.getString(KEY_MDNS_HOSTNAME, DEFAULT_MDNS_HOSTNAME);
+    }
+
+    public void setMdnsHostname(String hostname) {
+        preferences.edit().putString(KEY_MDNS_HOSTNAME, hostname).apply();
+    }
+
+    // ========== НАСТРОЙКИ ШТОР ==========
+
     public String getDefaultCurtainId() {
-        return preferences.getString(KEY_DEFAULT_CURTAIN_ID, DEFAULT_CURTAIN_ID);
+        return preferences.getString(KEY_CURTAIN_ID, DEFAULT_CURTAIN_ID);
     }
 
     public void setDefaultCurtainId(String curtainId) {
-        preferences.edit().putString(KEY_DEFAULT_CURTAIN_ID, curtainId).apply();
+        preferences.edit().putString(KEY_CURTAIN_ID, curtainId).apply();
     }
 
-    // ========== Название штор ==========
     public String getCurtainName() {
         return preferences.getString(KEY_CURTAIN_NAME, DEFAULT_CURTAIN_NAME);
     }
@@ -64,25 +108,8 @@ public class PreferencesManager {
         preferences.edit().putString(KEY_CURTAIN_NAME, name).apply();
     }
 
-    // ========== IP адрес NodeMCU ==========
-    public String getNodeMcuIp() {
-        return preferences.getString(KEY_NODEMCU_IP, DEFAULT_NODEMCU_IP);
-    }
+    // ========== НАСТРОЙКИ ПРИЛОЖЕНИЯ ==========
 
-    public void setNodeMcuIp(String ip) {
-        preferences.edit().putString(KEY_NODEMCU_IP, ip).apply();
-    }
-
-    // ========== Порт NodeMCU ==========
-    public int getNodeMcuPort() {
-        return preferences.getInt(KEY_NODEMCU_PORT, DEFAULT_NODEMCU_PORT);
-    }
-
-    public void setNodeMcuPort(int port) {
-        preferences.edit().putInt(KEY_NODEMCU_PORT, port).apply();
-    }
-
-    // ========== Интервал автообновления ==========
     public int getAutoUpdateInterval() {
         return preferences.getInt(KEY_AUTO_UPDATE_INTERVAL, DEFAULT_AUTO_UPDATE_INTERVAL);
     }
@@ -91,7 +118,6 @@ public class PreferencesManager {
         preferences.edit().putInt(KEY_AUTO_UPDATE_INTERVAL, interval).apply();
     }
 
-    // ========== Таймаут соединения ==========
     public int getConnectionTimeout() {
         return preferences.getInt(KEY_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT);
     }
@@ -100,7 +126,6 @@ public class PreferencesManager {
         preferences.edit().putInt(KEY_CONNECTION_TIMEOUT, timeout).apply();
     }
 
-    // ========== Вибрация ==========
     public boolean isVibrationEnabled() {
         return preferences.getBoolean(KEY_ENABLE_VIBRATION, DEFAULT_ENABLE_VIBRATION);
     }
@@ -109,7 +134,6 @@ public class PreferencesManager {
         preferences.edit().putBoolean(KEY_ENABLE_VIBRATION, enabled).apply();
     }
 
-    // ========== Звук ==========
     public boolean isSoundEnabled() {
         return preferences.getBoolean(KEY_ENABLE_SOUND, DEFAULT_ENABLE_SOUND);
     }
@@ -118,31 +142,131 @@ public class PreferencesManager {
         preferences.edit().putBoolean(KEY_ENABLE_SOUND, enabled).apply();
     }
 
-    // ========== Сброс настроек ==========
+    public boolean isShowConnectionErrors() {
+        return preferences.getBoolean(KEY_SHOW_CONNECTION_ERRORS, DEFAULT_SHOW_CONNECTION_ERRORS);
+    }
+
+    public void setShowConnectionErrors(boolean show) {
+        preferences.edit().putBoolean(KEY_SHOW_CONNECTION_ERRORS, show).apply();
+    }
+
+    public boolean isFirstLaunch() {
+        return preferences.getBoolean(KEY_FIRST_LAUNCH, true);
+    }
+
+    public void setFirstLaunch(boolean firstLaunch) {
+        preferences.edit().putBoolean(KEY_FIRST_LAUNCH, firstLaunch).apply();
+    }
+
+    // ========== НОВЫЕ МЕТОДЫ ДЛЯ АВТОРИЗАЦИИ ==========
+
+    public boolean isLoggedIn() {
+        return preferences.getBoolean(KEY_IS_LOGGED_IN, false);
+    }
+
+    public void setLoggedIn(boolean loggedIn) {
+        preferences.edit().putBoolean(KEY_IS_LOGGED_IN, loggedIn).apply();
+    }
+
+    public String getUserEmail() {
+        return preferences.getString(KEY_USER_EMAIL, "");
+    }
+
+    public void setUserEmail(String email) {
+        preferences.edit().putString(KEY_USER_EMAIL, email).apply();
+    }
+
+    public String getLoginType() {
+        return preferences.getString(KEY_LOGIN_TYPE, "guest");
+    }
+
+    public void setLoginType(String type) {
+        preferences.edit().putString(KEY_LOGIN_TYPE, type).apply();
+    }
+
+    /**
+     * Сохраняет сессию пользователя после успешного входа
+     */
+    public void saveUserSession(String email, String loginType) {
+        setLoggedIn(true);
+        setUserEmail(email);
+        setLoginType(loginType);
+    }
+
+    /**
+     * Очищает сессию пользователя (выход из аккаунта)
+     */
+    public void clearUserSession() {
+        setLoggedIn(false);
+        setUserEmail("");
+        setLoginType("guest");
+    }
+
+    // ========== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ==========
+
+    /**
+     * Возвращает URL для подключения к ESP32
+     */
+    public String getEsp32Url() {
+        if (isUseMdns()) {
+            return "http://" + getMdnsHostname();
+        } else {
+            return "http://" + getEsp32Ip() + ":" + getEsp32Port();
+        }
+    }
+
+    // ========== СБРОС НАСТРОЕК ==========
+
     public void resetToDefaults() {
         SharedPreferences.Editor editor = preferences.edit();
-        editor.putString(KEY_SERVER_URL, DEFAULT_SERVER_URL);
-        editor.putString(KEY_DEFAULT_CURTAIN_ID, DEFAULT_CURTAIN_ID);
+        // Сброс ESP32 настроек
+        editor.putString(KEY_ESP32_IP, DEFAULT_ESP32_IP);
+        editor.putInt(KEY_ESP32_PORT, DEFAULT_ESP32_PORT);
+        editor.putBoolean(KEY_USE_MDNS, DEFAULT_USE_MDNS);
+        editor.putString(KEY_MDNS_HOSTNAME, DEFAULT_MDNS_HOSTNAME);
+        // Сброс настроек штор
+        editor.putString(KEY_CURTAIN_ID, DEFAULT_CURTAIN_ID);
         editor.putString(KEY_CURTAIN_NAME, DEFAULT_CURTAIN_NAME);
-        editor.putString(KEY_NODEMCU_IP, DEFAULT_NODEMCU_IP);
-        editor.putInt(KEY_NODEMCU_PORT, DEFAULT_NODEMCU_PORT);
+        // Сброс настроек приложения
         editor.putInt(KEY_AUTO_UPDATE_INTERVAL, DEFAULT_AUTO_UPDATE_INTERVAL);
         editor.putInt(KEY_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT);
         editor.putBoolean(KEY_ENABLE_VIBRATION, DEFAULT_ENABLE_VIBRATION);
         editor.putBoolean(KEY_ENABLE_SOUND, DEFAULT_ENABLE_SOUND);
+        editor.putBoolean(KEY_SHOW_CONNECTION_ERRORS, DEFAULT_SHOW_CONNECTION_ERRORS);
+        editor.putBoolean(KEY_FIRST_LAUNCH, false);
+        // НЕ сбрасываем авторизацию при сбросе настроек
         editor.apply();
     }
 
-    // ========== Экспорт всех настроек ==========
+    /**
+     * Полный сброс ВСЕХ настроек (включая авторизацию)
+     */
+    public void resetAll() {
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.clear();
+        editor.apply();
+    }
+
+    // ========== ЭКСПОРТ НАСТРОЕК ==========
+
     public String exportSettings() {
-        return "Server URL: " + getServerUrl() + "\n" +
-               "Curtain ID: " + getDefaultCurtainId() + "\n" +
-               "Curtain Name: " + getCurtainName() + "\n" +
-               "NodeMCU IP: " + getNodeMcuIp() + "\n" +
-               "NodeMCU Port: " + getNodeMcuPort() + "\n" +
-               "Auto Update: " + getAutoUpdateInterval() + "ms\n" +
-               "Timeout: " + getConnectionTimeout() + "ms\n" +
-               "Vibration: " + isVibrationEnabled() + "\n" +
-               "Sound: " + isSoundEnabled();
+        return "=== НАСТРОЙКИ ESP32 ===\n" +
+                "Режим mDNS: " + (isUseMdns() ? "Да" : "Нет") + "\n" +
+                (isUseMdns() ? "mDNS имя: " + getMdnsHostname() : "IP адрес: " + getEsp32Ip()) + "\n" +
+                "Порт: " + getEsp32Port() + "\n\n" +
+                "=== НАСТРОЙКИ ШТОР ===\n" +
+                "ID шторы: " + getDefaultCurtainId() + "\n" +
+                "Название: " + getCurtainName() + "\n\n" +
+                "=== НАСТРОЙКИ ПРИЛОЖЕНИЯ ===\n" +
+                "Автообновление: " + getAutoUpdateInterval() + " мс\n" +
+                "Таймаут: " + getConnectionTimeout() + " мс\n" +
+                "Вибрация: " + (isVibrationEnabled() ? "Вкл" : "Выкл") + "\n" +
+                "Звук: " + (isSoundEnabled() ? "Вкл" : "Выкл") + "\n" +
+                "Показывать ошибки: " + (isShowConnectionErrors() ? "Да" : "Нет") + "\n\n" +
+                "=== АВТОРИЗАЦИЯ ===\n" +
+                "Вход выполнен: " + (isLoggedIn() ? "Да" : "Нет") + "\n" +
+                "Email: " + getUserEmail() + "\n" +
+                "Тип: " + getLoginType() + "\n\n" +
+                "URL подключения: " + getEsp32Url();
     }
 }

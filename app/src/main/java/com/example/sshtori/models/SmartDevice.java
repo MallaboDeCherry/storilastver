@@ -1,4 +1,4 @@
-package com.example.sshtori.devices;
+package com.example.sshtori.models;
 
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -24,20 +24,16 @@ public class SmartDevice implements Parcelable {
 
     private String id;
     private String name;
-    private String model;
     private String ipAddress;
     private int port;
     private String mdnsHostname;
     private DeviceType type;
     private boolean isConnected;
-    private String lastSeen;
-    private int signalStrength;
 
     public SmartDevice() {
         this.port = 80;
         this.type = DeviceType.CURTAIN;
         this.isConnected = false;
-        this.model = "ESP32 NodeMCU";
     }
 
     public SmartDevice(String id, String name, String ipAddress, DeviceType type) {
@@ -47,20 +43,16 @@ public class SmartDevice implements Parcelable {
         this.port = 80;
         this.type = type;
         this.isConnected = false;
-        this.model = "ESP32 NodeMCU";
     }
 
     protected SmartDevice(Parcel in) {
         id = in.readString();
         name = in.readString();
-        model = in.readString();
         ipAddress = in.readString();
         port = in.readInt();
         mdnsHostname = in.readString();
         type = DeviceType.valueOf(in.readString());
         isConnected = in.readByte() != 0;
-        lastSeen = in.readString();
-        signalStrength = in.readInt();
     }
 
     public static final Creator<SmartDevice> CREATOR = new Creator<SmartDevice>() {
@@ -78,26 +70,20 @@ public class SmartDevice implements Parcelable {
     // Getters
     public String getId() { return id; }
     public String getName() { return name; }
-    public String getModel() { return model; }
     public String getIpAddress() { return ipAddress; }
     public int getPort() { return port; }
     public String getMdnsHostname() { return mdnsHostname; }
     public DeviceType getType() { return type; }
     public boolean isConnected() { return isConnected; }
-    public String getLastSeen() { return lastSeen; }
-    public int getSignalStrength() { return signalStrength; }
 
     // Setters
     public void setId(String id) { this.id = id; }
     public void setName(String name) { this.name = name; }
-    public void setModel(String model) { this.model = model; }
     public void setIpAddress(String ipAddress) { this.ipAddress = ipAddress; }
     public void setPort(int port) { this.port = port; }
     public void setMdnsHostname(String mdnsHostname) { this.mdnsHostname = mdnsHostname; }
     public void setType(DeviceType type) { this.type = type; }
     public void setConnected(boolean connected) { isConnected = connected; }
-    public void setLastSeen(String lastSeen) { this.lastSeen = lastSeen; }
-    public void setSignalStrength(int signalStrength) { this.signalStrength = signalStrength; }
 
     public String getBaseUrl() {
         if (mdnsHostname != null && !mdnsHostname.isEmpty()) {
@@ -115,14 +101,11 @@ public class SmartDevice implements Parcelable {
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeString(id);
         dest.writeString(name);
-        dest.writeString(model);
         dest.writeString(ipAddress);
         dest.writeInt(port);
         dest.writeString(mdnsHostname);
         dest.writeString(type.name());
         dest.writeByte((byte) (isConnected ? 1 : 0));
-        dest.writeString(lastSeen);
-        dest.writeInt(signalStrength);
     }
 
     @Override
